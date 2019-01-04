@@ -74,6 +74,7 @@ public final class ExecutionService {
             return;
         }
         for (int each : shardingContexts.getShardingItemParameters().keySet()) {
+            // 移除分配的作业分片项正在运行中的标记，表示作业分片项不存在运行状态
             jobNodeStorage.removeJobNodeIfExisted(ShardingNode.getRunningNode(each));
         }
     }

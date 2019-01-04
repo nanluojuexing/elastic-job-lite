@@ -66,11 +66,17 @@ public final class JobCoreConfiguration {
     
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder {
-        
+        /**
+         * 必填参数
+         */
         private final String jobName;
-        
+        /**
+         * 必填，用于控制作业的触发时间
+         */
         private final String cron;
-        
+        /**
+         * 作业分片总数，如果一个作业的启动超过作业分片总数的节点，只有shardingTotalCount会执行作业
+         */
         private final int shardingTotalCount;
         
         private String shardingItemParameters = "";

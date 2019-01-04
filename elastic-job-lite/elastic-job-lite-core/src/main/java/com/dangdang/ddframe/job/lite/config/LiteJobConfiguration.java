@@ -33,21 +33,39 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class LiteJobConfiguration implements JobRootConfiguration {
-    
+
+    /**
+     * 作业类型
+     */
     private final JobTypeConfiguration typeConfig;
-    
+
+    /**
+     * 监控作业的运行时的状态，默认为false
+     */
     private final boolean monitorExecution;
-    
+    /**
+     * 忍受最大容忍的本机与注册中心的时间的误差秒数，默认为-1 不检查时间误差
+     */
     private final int maxTimeDiffSeconds;
-    
+    /**
+     * 作业的监控端口，默认为-1，不开启作业的监控
+     */
     private final int monitorPort;
-    
+    /**
+     * 作业分片的策略的类全路径，默认使用分配侧路
+     */
     private final String jobShardingStrategyClass;
-    
+    /**
+     *
+     */
     private final int reconcileIntervalMinutes;
-    
+    /**
+     * 作业是否禁用执行
+     */
     private final boolean disabled;
-    
+    /**
+     * 设置适应本地作业配置覆盖注册中心的作业配置，默认为false
+     */
     private final boolean overwrite;
     
     /**
@@ -77,7 +95,10 @@ public final class LiteJobConfiguration implements JobRootConfiguration {
     public static Builder newBuilder(final JobTypeConfiguration jobConfig) {
         return new Builder(jobConfig);
     }
-    
+
+    /**
+     * 使用该类来配置 LiteJobConfiguration
+     */
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder {
         

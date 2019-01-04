@@ -33,21 +33,34 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class JobRegistry {
-    
+
+    /**
+     * 单例
+     */
     private static volatile JobRegistry instance;
-    
+    /**
+     * 作业调度控制器集合
+     */
     private Map<String, JobScheduleController> schedulerMap = new ConcurrentHashMap<>();
-    
+    /**
+     * 注册中心集合
+     */
     private Map<String, CoordinatorRegistryCenter> regCenterMap = new ConcurrentHashMap<>();
-    
+    /**
+     * 作业运行实例集合
+     */
     private Map<String, JobInstance> jobInstanceMap = new ConcurrentHashMap<>();
-    
+    /**
+     * 运行中 的作业集合
+     */
     private Map<String, Boolean> jobRunningMap = new ConcurrentHashMap<>();
-    
+    /**
+     * 作业运行分片数量集合
+     */
     private Map<String, Integer> currentShardingTotalCountMap = new ConcurrentHashMap<>();
     
     /**
-     * 获取作业注册表实例.
+     * 获取作业注册表实例. double-check
      * 
      * @return 作业注册表实例
      */

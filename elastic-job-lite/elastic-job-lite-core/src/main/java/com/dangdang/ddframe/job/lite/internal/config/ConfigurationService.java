@@ -32,9 +32,13 @@ import com.google.common.base.Optional;
  * @author caohao
  */
 public final class ConfigurationService {
-    
+    /**
+     * 时间服务
+     */
     private final TimeService timeService;
-    
+    /**
+     * 作业节点的数据判断
+     */
     private final JobNodeStorage jobNodeStorage;
     
     public ConfigurationService(final CoordinatorRegistryCenter regCenter, final String jobName) {
@@ -72,7 +76,11 @@ public final class ConfigurationService {
             jobNodeStorage.replaceJobNode(ConfigurationNode.ROOT, LiteJobConfigurationGsonFactory.toJson(liteJobConfig));
         }
     }
-    
+
+    /**
+     * 校验注册忠祠内存储的作业配置的作业实现类全路径（jobClass）和当前的是都相同，如果不同，则认为是冲突，不与允许存储
+     * @param liteJobConfig
+     */
     private void checkConflictJob(final LiteJobConfiguration liteJobConfig) {
         Optional<LiteJobConfiguration> liteJobConfigFromZk = find();
         if (liteJobConfigFromZk.isPresent() && !liteJobConfigFromZk.get().getTypeConfig().getJobClass().equals(liteJobConfig.getTypeConfig().getJobClass())) {

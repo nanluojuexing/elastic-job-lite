@@ -59,11 +59,18 @@ public class JobScheduler {
     public static final String ELASTIC_JOB_DATA_MAP_KEY = "elasticJob";
     
     private static final String JOB_FACADE_DATA_MAP_KEY = "jobFacade";
-    
+
+    /**
+     * 作业的配置
+     */
     private final LiteJobConfiguration liteJobConfig;
-    
+    /**
+     * 注册中心 用于协调分布式的服务
+     */
     private final CoordinatorRegistryCenter regCenter;
-    
+    /**
+     * 调度器门面
+     */
     // TODO 为测试使用,测试用例不能反复new monitor service,以后需要把MonitorService重构为单例
     @Getter
     private final SchedulerFacade schedulerFacade;
@@ -78,7 +85,14 @@ public class JobScheduler {
                         final ElasticJobListener... elasticJobListeners) {
         this(regCenter, liteJobConfig, new JobEventBus(jobEventConfig), elasticJobListeners);
     }
-    
+
+    /**
+     *
+     * @param regCenter 注册中心
+     * @param liteJobConfig 作业的配置
+     * @param jobEventBus 作业的事件总线
+     * @param elasticJobListeners  作业的监听器，监听作业的执行前后
+     */
     private JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventBus jobEventBus, final ElasticJobListener... elasticJobListeners) {
         JobRegistry.getInstance().addJobInstance(liteJobConfig.getJobName(), new JobInstance());
         this.liteJobConfig = liteJobConfig;
@@ -102,18 +116,26 @@ public class JobScheduler {
      * 初始化作业.
      */
     public void init() {
+        // 更新作业的配置
         LiteJobConfiguration liteJobConfigFromRegCenter = schedulerFacade.updateJobConfiguration(liteJobConfig);
+        //设置当前作业的分片总数
         JobRegistry.getInstance().setCurrentShardingTotalCount(liteJobConfigFromRegCenter.getJobName(), liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getShardingTotalCount());
+        // 创建 作业的调度控制器
         JobScheduleController jobScheduleController = new JobScheduleController(
                 createScheduler(), createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()), liteJobConfigFromRegCenter.getJobName());
+        //添加 作业的调度控制器
         JobRegistry.getInstance().registerJob(liteJobConfigFromRegCenter.getJobName(), jobScheduleController, regCenter);
+        // 注册作业的启动信息
         schedulerFacade.registerStartUpInfo(!liteJobConfigFromRegCenter.isDisabled());
+        // 调度作业
         jobScheduleController.scheduleJob(liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getCron());
     }
     
     private JobDetail createJobDetail(final String jobClass) {
+        //创建quartz作业
         JobDetail result = JobBuilder.newJob(LiteJob.class).withIdentity(liteJobConfig.getJobName()).build();
         result.getJobDataMap().put(JOB_FACADE_DATA_MAP_KEY, jobFacade);
+        // 创建 Elastic-jon对象
         Optional<ElasticJob> elasticJobInstance = createElasticJobInstance();
         if (elasticJobInstance.isPresent()) {
             result.getJobDataMap().put(ELASTIC_JOB_DATA_MAP_KEY, elasticJobInstance.get());
@@ -130,7 +152,11 @@ public class JobScheduler {
     protected Optional<ElasticJob> createElasticJobInstance() {
         return Optional.absent();
     }
-    
+
+    /**
+     * 创建quartz调度器
+     * @return
+     */
     private Scheduler createScheduler() {
         Scheduler result;
         try {
@@ -147,9 +173,12 @@ public class JobScheduler {
     private Properties getBaseQuartzProperties() {
         Properties result = new Properties();
         result.put("org.quartz.threadPool.class", org.quartz.simpl.SimpleThreadPool.class.getName());
+        // quartz执行的作业线程数量为1
         result.put("org.quartz.threadPool.threadCount", "1");
         result.put("org.quartz.scheduler.instanceName", liteJobConfig.getJobName());
+        // 设置最大允许超过 1 毫秒 作业分片项被视为错过执行
         result.put("org.quartz.jobStore.misfireThreshold", "1");
+        // 优雅的关闭
         result.put("org.quartz.plugin.shutdownhook.class", JobShutdownHookPlugin.class.getName());
         result.put("org.quartz.plugin.shutdownhook.cleanShutdown", Boolean.TRUE.toString());
         return result;

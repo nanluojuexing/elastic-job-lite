@@ -56,11 +56,17 @@ public final class LiteJobFacade implements JobFacade {
     private final ExecutionContextService executionContextService;
     
     private final ExecutionService executionService;
-    
+    /**
+     * 失效转移的服务
+     */
     private final FailoverService failoverService;
-    
+    /**
+     * 监听数组服务
+     */
     private final List<ElasticJobListener> elasticJobListeners;
-    
+    /**
+     * 作业时间总线
+     */
     private final JobEventBus jobEventBus;
     
     public LiteJobFacade(final CoordinatorRegistryCenter regCenter, final String jobName, final List<ElasticJobListener> elasticJobListeners, final JobEventBus jobEventBus) {

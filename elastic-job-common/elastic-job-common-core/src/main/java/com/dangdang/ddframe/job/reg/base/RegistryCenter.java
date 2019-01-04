@@ -18,7 +18,7 @@
 package com.dangdang.ddframe.job.reg.base;
 
 /**
- * 注册中心.
+ * 注册中心.抽象
  * 
  * @author zhangliang
  */

@@ -37,7 +37,7 @@ public final class JobInstance {
     private static final String DELIMITER = "@-@";
     
     /**
-     * 作业实例主键.
+     * 作业实例主键. 同一个elastic-job-lite 实例，不同的作业使用相同的作业实例主键
      */
     private final String jobInstanceId;
     

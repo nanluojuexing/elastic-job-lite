@@ -101,6 +101,11 @@ public final class JobExecutionEvent implements JobEvent {
      * 执行来源.
      */
     public enum ExecutionSource {
-        NORMAL_TRIGGER, MISFIRE, FAILOVER
+        // 普通触发执行
+        NORMAL_TRIGGER,
+        // 被错过执行
+        MISFIRE,
+        // 失效转移执行
+        FAILOVER
     }
 }

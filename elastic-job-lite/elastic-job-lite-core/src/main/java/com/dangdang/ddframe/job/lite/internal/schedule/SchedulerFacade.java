@@ -38,25 +38,45 @@ import java.util.List;
  * @author zhangliang
  */
 public final class SchedulerFacade {
-    
+    /**
+     * 作业名称
+     */
     private final String jobName;
-    
+    /**
+     * 作业配置服务
+     */
     private final ConfigurationService configService;
-    
+    /**
+     * 直接点服务
+     */
     private final LeaderService leaderService;
-    
+    /**
+     * 服务器服务
+     */
     private final ServerService serverService;
-    
+    /**
+     * 作业运行实例
+     */
     private final InstanceService instanceService;
-    
+    /**
+     * 分片服务
+     */
     private final ShardingService shardingService;
-    
+    /**
+     * 执行作业
+     */
     private final ExecutionService executionService;
-    
+    /**
+     * 监控作业
+     */
     private final MonitorService monitorService;
-    
+    /**
+     * 调节作业不一致状态的服务
+     */
     private final ReconcileService reconcileService;
-    
+    /**
+     * 作业注册中心的监听器管理者
+     */
     private ListenerManager listenerManager;
     
     public SchedulerFacade(final CoordinatorRegistryCenter regCenter, final String jobName) {
@@ -110,12 +130,19 @@ public final class SchedulerFacade {
      * @param enabled 作业是否启用
      */
     public void registerStartUpInfo(final boolean enabled) {
+        // 开启监听器
         listenerManager.startAllListeners();
+        // 选举节点
         leaderService.electLeader();
+        // 持久化 作业服务器的上线信息
         serverService.persistOnline(enabled);
+        // 持久化 作业运行实例的线上信息
         instanceService.persistOnline();
+        // 设置 需要重新分片的标记
         shardingService.setReshardingFlag();
+        // 初始化 作业监听服务
         monitorService.listen();
+        // 初始化 调节作业不一致状态的服务
         if (!reconcileService.isRunning()) {
             reconcileService.startAsync();
         }
