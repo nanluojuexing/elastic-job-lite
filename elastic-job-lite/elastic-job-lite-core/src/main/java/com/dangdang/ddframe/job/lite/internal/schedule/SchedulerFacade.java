@@ -132,7 +132,7 @@ public final class SchedulerFacade {
     public void registerStartUpInfo(final boolean enabled) {
         // 开启监听器
         listenerManager.startAllListeners();
-        // 选举节点
+        // 选举 主节点
         leaderService.electLeader();
         // 持久化 作业服务器的上线信息
         serverService.persistOnline(enabled);

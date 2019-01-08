@@ -30,7 +30,13 @@ import org.apache.curator.framework.recipes.cache.TreeCacheListener;
  * @author zhangliang
  */
 public abstract class AbstractJobListener implements TreeCacheListener {
-    
+
+    /**
+     * 屏蔽非节点数据变化时间
+     * @param client
+     * @param event
+     * @throws Exception
+     */
     @Override
     public final void childEvent(final CuratorFramework client, final TreeCacheEvent event) throws Exception {
         ChildData childData = event.getData();
@@ -43,6 +49,13 @@ public abstract class AbstractJobListener implements TreeCacheListener {
         }
         dataChanged(path, event.getType(), null == childData.getData() ? "" : new String(childData.getData(), Charsets.UTF_8));
     }
-    
+
+    /**
+     * 节点数据变化
+     *      作业注册中心的监听器实现类 对节点数据变化进行处理
+     * @param path
+     * @param eventType
+     * @param data
+     */
     protected abstract void dataChanged(final String path, final Type eventType, final String data);
 }

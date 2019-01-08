@@ -41,13 +41,20 @@ public final class RegistryCenterConnectionStateListener implements ConnectionSt
         if (JobRegistry.getInstance().isShutdown(jobName)) {
             return;
         }
+
         JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
+        // 连接状态 过期 失效
         if (ConnectionState.SUSPENDED == newState || ConnectionState.LOST == newState) {
+            // 暂停调度作业
             jobScheduleController.pauseJob();
         } else if (ConnectionState.RECONNECTED == newState) {
+            // 持久化作业服务器上线信息
             serverService.persistOnline(serverService.isEnableServer(JobRegistry.getInstance().getJobInstance(jobName).getIp()));
+            // 持久化作业运行实例上线相关信息
             instanceService.persistOnline();
+            // 清楚本地分配的作业分片项运行中的标记
             executionService.clearRunningInfo(shardingService.getLocalShardingItems());
+            // 恢复作业的调度
             jobScheduleController.resumeJob();
         }
     }

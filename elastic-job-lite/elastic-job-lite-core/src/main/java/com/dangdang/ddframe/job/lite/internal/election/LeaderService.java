@@ -86,6 +86,8 @@ public final class LeaderService {
     
     /**
      * 判断是否已经有主节点.
+     *
+     * LeaderLatch 只保证同一时间有且仅有一个工作节点，在获得分布式锁的工作节点结束逻辑后，第二个工作节点会开始逻辑，如果不判断当前是否有主节点，原来的主节点会被覆盖
      * 
      * @return 是否已经有主节点
      */
@@ -105,6 +107,7 @@ public final class LeaderService {
         
         @Override
         public void execute() {
+            // 当前无主节点
             if (!hasLeader()) {
                 jobNodeStorage.fillEphemeralJobNode(LeaderNode.INSTANCE, JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId());
             }

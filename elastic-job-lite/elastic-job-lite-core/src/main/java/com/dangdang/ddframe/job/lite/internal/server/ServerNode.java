@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class ServerNode {
     
     /**
-     * 服务器信息根节点.
+     * 服务器信息根节点. 以 ip 为数据节点路径存储每个服务器节点
      */
     public static final String ROOT = "servers";
     

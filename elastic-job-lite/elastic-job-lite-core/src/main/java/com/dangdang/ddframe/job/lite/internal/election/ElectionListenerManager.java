@@ -66,7 +66,13 @@ public final class ElectionListenerManager extends AbstractListenerManager {
                 leaderService.electLeader();
             }
         }
-        
+
+        /**
+         * 主动选举
+         * @param path
+         * @param data
+         * @return
+         */
         private boolean isActiveElection(final String path, final String data) {
             return !leaderService.hasLeader() && isLocalServerEnabled(path, data);
         }

@@ -56,7 +56,10 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
     
     @Getter(AccessLevel.PROTECTED)
     private ZookeeperConfiguration zkConfig;
-    
+
+    /**
+     * 缓存作业名称
+     */
     private final Map<String, TreeCache> caches = new HashMap<>();
     
     @Getter
@@ -65,20 +68,28 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
     public ZookeeperRegistryCenter(final ZookeeperConfiguration zkConfig) {
         this.zkConfig = zkConfig;
     }
-    
+
+    /**
+     * RegExceptionHandler 注册中心异常处理器
+     */
     @Override
     public void init() {
         log.debug("Elastic job: zookeeper registry center init, server lists is: {}.", zkConfig.getServerLists());
         CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()
                 .connectString(zkConfig.getServerLists())
+                // ExponentialBackoffRetry 是zk失去连接的一种重新连接的策略 动态计算事件 时间间隔=baseSleepTimesMs * Math.max(1, random.nextInt(1 << (retryCount + 1))
                 .retryPolicy(new ExponentialBackoffRetry(zkConfig.getBaseSleepTimeMilliseconds(), zkConfig.getMaxRetries(), zkConfig.getMaxSleepTimeMilliseconds()))
+                // 作业集群相同使用相同的名称
                 .namespace(zkConfig.getNamespace());
         if (0 != zkConfig.getSessionTimeoutMilliseconds()) {
+            // 会话超时时间，默认 60 * 1000 毫秒
             builder.sessionTimeoutMs(zkConfig.getSessionTimeoutMilliseconds());
         }
         if (0 != zkConfig.getConnectionTimeoutMilliseconds()) {
+            // 连接超时时间，默认 15 * 1000 毫秒
             builder.connectionTimeoutMs(zkConfig.getConnectionTimeoutMilliseconds());
         }
+        // 认证
         if (!Strings.isNullOrEmpty(zkConfig.getDigest())) {
             builder.authorization("digest", zkConfig.getDigest().getBytes(Charsets.UTF_8))
                     .aclProvider(new ACLProvider() {
@@ -96,6 +107,7 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
         }
         client = builder.build();
         client.start();
+        // 连接zk
         try {
             if (!client.blockUntilConnected(zkConfig.getMaxSleepTimeMilliseconds() * zkConfig.getMaxRetries(), TimeUnit.MILLISECONDS)) {
                 client.close();
@@ -107,7 +119,10 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
             RegExceptionHandler.handleException(ex);
         }
     }
-    
+
+    /**
+     * 关闭
+     */
     @Override
     public void close() {
         for (Entry<String, TreeCache> each : caches.entrySet()) {
@@ -132,9 +147,9 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
     
     @Override
     public String get(final String key) {
-        TreeCache cache = findTreeCache(key);
+        TreeCache cache = findTreeCache(key);// 获取缓存
         if (null == cache) {
-            return getDirectly(key);
+            return getDirectly(key); // 直接从zk获取
         }
         ChildData resultInCache = cache.getCurrentData(key);
         if (null != resultInCache) {
@@ -210,7 +225,12 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
             return false;
         }
     }
-    
+
+    /**
+     * 存储持久节点数据
+     * @param key 键
+     * @param value 值
+     */
     @Override
     public void persist(final String key, final String value) {
         try {
@@ -225,7 +245,12 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
             RegExceptionHandler.handleException(ex);
         }
     }
-    
+
+    /**
+     * 校验健（key）存在时才更新
+     * @param key 键
+     * @param value 值
+     */
     @Override
     public void update(final String key, final String value) {
         try {
@@ -236,7 +261,12 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
             RegExceptionHandler.handleException(ex);
         }
     }
-    
+
+    /**
+     * 存储临时节点数据
+     * @param key 键
+     * @param value 值
+     */
     @Override
     public void persistEphemeral(final String key, final String value) {
         try {
@@ -284,7 +314,12 @@ public final class ZookeeperRegistryCenter implements CoordinatorRegistryCenter 
             RegExceptionHandler.handleException(ex);
         }
     }
-    
+
+    /**
+     * 获得当前的注册时间
+     * @param key 用于获取时间的键
+     * @return
+     */
     @Override
     public long getRegistryCenterTime(final String key) {
         long result = 0L;

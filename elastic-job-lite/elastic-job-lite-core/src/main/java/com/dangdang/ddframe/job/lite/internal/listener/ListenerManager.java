@@ -37,7 +37,9 @@ import java.util.List;
  * @author zhangliang
  */
 public final class ListenerManager {
-    
+    /**
+     * 作业节点数据访问类
+     */
     private final JobNodeStorage jobNodeStorage;
     
     private final ElectionListenerManager electionListenerManager;
@@ -55,7 +57,10 @@ public final class ListenerManager {
     private final RescheduleListenerManager rescheduleListenerManager;
 
     private final GuaranteeListenerManager guaranteeListenerManager;
-    
+
+    /**
+     * 注册中心连接状态监听器
+     */
     private final RegistryCenterConnectionStateListener regCenterConnectionStateListener;
     
     public ListenerManager(final CoordinatorRegistryCenter regCenter, final String jobName, final List<ElasticJobListener> elasticJobListeners) {
@@ -68,6 +73,7 @@ public final class ListenerManager {
         triggerListenerManager = new TriggerListenerManager(regCenter, jobName);
         rescheduleListenerManager = new RescheduleListenerManager(regCenter, jobName);
         guaranteeListenerManager = new GuaranteeListenerManager(regCenter, jobName, elasticJobListeners);
+        // 开启 注册中心连接状态监听器
         regCenterConnectionStateListener = new RegistryCenterConnectionStateListener(regCenter, jobName);
     }
     
