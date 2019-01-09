@@ -74,17 +74,41 @@ public final class ElectionListenerManager extends AbstractListenerManager {
          * @return
          */
         private boolean isActiveElection(final String path, final String data) {
-            return !leaderService.hasLeader() && isLocalServerEnabled(path, data);
+                    //不存在主节点
+            return !leaderService.hasLeader()
+                    // 开启作业
+                    && isLocalServerEnabled(path, data);
         }
-        
+
+        /**
+         * 被动选举  主节点被删除后
+         * @param path
+         * @param eventType
+         * @return
+         */
         private boolean isPassiveElection(final String path, final Type eventType) {
-            return isLeaderCrashed(path, eventType) && serverService.isAvailableServer(JobRegistry.getInstance().getJobInstance(jobName).getIp());
+            return isLeaderCrashed(path, eventType)
+                    // 当前节点是都在运行中（为挂掉），可有参加主节点选举
+                    && serverService.isAvailableServer(JobRegistry.getInstance().getJobInstance(jobName).getIp());
         }
-        
+
+        /**
+         *  判断原节点是否被删除
+         *      主作业节点正常退出也符合被动选举条件
+         * @param path
+         * @param eventType
+         * @return
+         */
         private boolean isLeaderCrashed(final String path, final Type eventType) {
             return leaderNode.isLeaderInstancePath(path) && Type.NODE_REMOVED == eventType;
         }
-        
+
+        /**
+         * 开启作业
+         * @param path
+         * @param data
+         * @return
+         */
         private boolean isLocalServerEnabled(final String path, final String data) {
             return serverNode.isLocalServerPath(path) && !ServerStatus.DISABLED.name().equals(data);
         }
