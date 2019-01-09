@@ -66,7 +66,9 @@ public final class ShardingListenerManager extends AbstractListenerManager {
             if (configNode.isConfigPath(path) && 0 != JobRegistry.getInstance().getCurrentShardingTotalCount(jobName)) {
                 int newShardingTotalCount = LiteJobConfigurationGsonFactory.fromJson(data).getTypeConfig().getCoreConfig().getShardingTotalCount();
                 if (newShardingTotalCount != JobRegistry.getInstance().getCurrentShardingTotalCount(jobName)) {
+                    // 设置重新分片的标记
                     shardingService.setReshardingFlag();
+                    // 设置当前的分片数
                     JobRegistry.getInstance().setCurrentShardingTotalCount(jobName, newShardingTotalCount);
                 }
             }
@@ -81,11 +83,22 @@ public final class ShardingListenerManager extends AbstractListenerManager {
                 shardingService.setReshardingFlag();
             }
         }
-        
+
+        /**
+         * 服务器被开启或禁用
+         * @param eventType
+         * @param path
+         * @return
+         */
         private boolean isInstanceChange(final Type eventType, final String path) {
             return instanceNode.isInstancePath(path) && Type.NODE_UPDATED != eventType;
         }
-        
+
+        /**
+         * 作业节点新增或者移除
+         * @param path
+         * @return
+         */
         private boolean isServerChange(final String path) {
             return serverNode.isServerPath(path);
         }

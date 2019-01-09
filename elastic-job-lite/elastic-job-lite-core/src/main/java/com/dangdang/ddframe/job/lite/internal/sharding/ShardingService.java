@@ -100,21 +100,31 @@ public final class ShardingService {
      * </p>
      */
     public void shardingIfNecessary() {
+        //  获得作业的运行实例
         List<JobInstance> availableJobInstances = instanceService.getAvailableJobInstances();
         if (!isNeedSharding() || availableJobInstances.isEmpty()) {
             return;
         }
+        //  leaderService 节点是否是主节点
         if (!leaderService.isLeaderUntilBlock()) {
+            // 非主节点等待作业片分配完成
             blockUntilShardingCompleted();
             return;
         }
+        // 等待 作业未在运行中状态
         waitingOtherShardingItemCompleted();
+        // 获取作业配置信息（非缓存）
         LiteJobConfiguration liteJobConfig = configService.load(false);
+        // 获取作业的分片总数
         int shardingTotalCount = liteJobConfig.getTypeConfig().getCoreConfig().getShardingTotalCount();
         log.debug("Job '{}' sharding begin.", jobName);
+        // 设置作业重新分片的标记
         jobNodeStorage.fillEphemeralJobNode(ShardingNode.PROCESSING, "");
+        // 重置 作业分片项信息
         resetShardingInfo(shardingTotalCount);
+        // 设置 作业分片项信息
         JobShardingStrategy jobShardingStrategy = JobShardingStrategyFactory.getStrategy(liteJobConfig.getJobShardingStrategyClass());
+        // 实现在事务中设置每个节点分配的作业分片项
         jobNodeStorage.executeInTransaction(new PersistShardingInfoTransactionExecutionCallback(jobShardingStrategy.sharding(availableJobInstances, jobName, shardingTotalCount)));
         log.debug("Job '{}' sharding complete.", jobName);
     }
@@ -134,10 +144,12 @@ public final class ShardingService {
     }
     
     private void resetShardingInfo(final int shardingTotalCount) {
+        // 重置，有效的作业分片项
         for (int i = 0; i < shardingTotalCount; i++) {
             jobNodeStorage.removeJobNodeIfExisted(ShardingNode.getInstanceNode(i));
             jobNodeStorage.createJobNodeIfNeeded(ShardingNode.ROOT + "/" + i);
         }
+        // 移除 多余的作业分片项
         int actualShardingTotalCount = jobNodeStorage.getJobNodeChildrenKeys(ShardingNode.ROOT).size();
         if (actualShardingTotalCount > shardingTotalCount) {
             for (int i = shardingTotalCount; i < actualShardingTotalCount; i++) {
@@ -197,16 +209,20 @@ public final class ShardingService {
     
     @RequiredArgsConstructor
     class PersistShardingInfoTransactionExecutionCallback implements TransactionExecutionCallback {
-        
+        /**
+         * 作业分片项分配结果
+         */
         private final Map<JobInstance, List<Integer>> shardingResults;
         
         @Override
         public void execute(final CuratorTransactionFinal curatorTransactionFinal) throws Exception {
+            // 设置 每个节点分配的作业分片项
             for (Map.Entry<JobInstance, List<Integer>> entry : shardingResults.entrySet()) {
                 for (int shardingItem : entry.getValue()) {
                     curatorTransactionFinal.create().forPath(jobNodePath.getFullPath(ShardingNode.getInstanceNode(shardingItem)), entry.getKey().getJobInstanceId().getBytes()).and();
                 }
             }
+            // 移除 作业需要重分片的标记、作业正在重分片的标记
             curatorTransactionFinal.delete().forPath(jobNodePath.getFullPath(ShardingNode.NECESSARY)).and();
             curatorTransactionFinal.delete().forPath(jobNodePath.getFullPath(ShardingNode.PROCESSING)).and();
         }

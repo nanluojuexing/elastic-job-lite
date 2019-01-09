@@ -108,22 +108,36 @@ public final class LiteJobFacade implements JobFacade {
             failoverService.updateFailoverComplete(shardingContexts.getShardingItemParameters().keySet());
         }
     }
-    
+
+    /**
+     * 获得 分片上下文
+     * @return
+     */
     @Override
     public ShardingContexts getShardingContexts() {
+        // 获得 失效转移的作业分片项
         boolean isFailover = configService.load(true).isFailover();
         if (isFailover) {
+            // 获取在本作业节点的失效转移分片项集合
             List<Integer> failoverShardingItems = failoverService.getLocalFailoverItems();
             if (!failoverShardingItems.isEmpty()) {
                 return executionContextService.getJobShardingContext(failoverShardingItems);
             }
         }
+        // 作业分片 如果需要分片且当前节点为主节点
         shardingService.shardingIfNecessary();
+        // 获得 分配在本机的作业分片项
         List<Integer> shardingItems = shardingService.getLocalShardingItems();
+        // 【忽略，作业失效转移详解】移除 分配在本机的失效转移的作业分片项目
         if (isFailover) {
+            /**
+             * 作业节点A持有作业分片项[0, 1]，此时异常断网，导致[0, 1]被作业节点B失效转移抓取，此时若作业节点A恢复，作业分片项[0, 1]依然属于作业节点A，但是可能已经在作业节点B执行，因此需要进行移除，避免多节点运行相同的作业分片项
+             */
             shardingItems.removeAll(failoverService.getLocalTakeOffItems());
         }
+        // 移除 被禁用的作业分片项
         shardingItems.removeAll(executionService.getDisabledItems(shardingItems));
+        // 获取当前作业服务器分片上下文
         return executionContextService.getJobShardingContext(shardingItems);
     }
     

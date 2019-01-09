@@ -71,12 +71,20 @@ public final class FailoverService {
      */
     public void failoverIfNecessary() {
         if (needFailover()) {
+            // FailoverNode.LATCH 构成分布式锁 使多个作业节点调用，有且仅有一个作业节点进行执行
             jobNodeStorage.executeInLeader(FailoverNode.LATCH, new FailoverLeaderExecutionCallback());
         }
     }
-    
+
+    /**
+     * 判断是否符合失效转移条件
+     *  失效转移： 运行中的作业服务器崩溃不会导致重新分片，只会在下次作业启动时分片。启用失效转移功能可以在本次作业执行过程中，监测其他作业服务器【空闲】，抓取未完成的孤儿分片项执行
+     * @return
+     */
     private boolean needFailover() {
+        //${JOB_NAME}/leader/failover/items/${ITEM_ID} 有失效转移的作业分片项
         return jobNodeStorage.isJobNodeExisted(FailoverNode.ITEMS_ROOT) && !jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).isEmpty()
+                // 当前作业不在运行中
                 && !JobRegistry.getInstance().isJobRunning(jobName);
     }
     
@@ -152,14 +160,19 @@ public final class FailoverService {
         
         @Override
         public void execute() {
+            // 判断需要失效转移
             if (JobRegistry.getInstance().isShutdown(jobName) || !needFailover()) {
                 return;
             }
+            // 获得一个 `${JOB_NAME}/leader/failover/items/${ITEM_ID}` 作业分片项
             int crashedItem = Integer.parseInt(jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).get(0));
             log.debug("Failover job '{}' begin, crashed item '{}'", jobName, crashedItem);
+            // 设置这个 `${JOB_NAME}/sharding/${ITEM_ID}/failover` 作业分片项 为 当前作业节点
             jobNodeStorage.fillEphemeralJobNode(FailoverNode.getExecutionFailoverNode(crashedItem), JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId());
+            // 移除这个 `${JOB_NAME}/leader/failover/items/${ITEM_ID}` 作业分片项
             jobNodeStorage.removeJobNodeIfExisted(FailoverNode.getItemsNode(crashedItem));
             // TODO 不应使用triggerJob, 而是使用executor统一调度
+            // 触发作业执行
             JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);
             if (null != jobScheduleController) {
                 jobScheduleController.triggerJob();

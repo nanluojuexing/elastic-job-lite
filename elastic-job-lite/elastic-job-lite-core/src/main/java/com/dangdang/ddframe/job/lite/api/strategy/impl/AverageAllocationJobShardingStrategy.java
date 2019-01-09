@@ -40,23 +40,39 @@ import java.util.Map;
  * @author zhangliang
  */
 public final class AverageAllocationJobShardingStrategy implements JobShardingStrategy {
-    
+
+    /**
+     *
+     * @param jobInstances 所有参与分片的单元列表
+     * @param jobName 作业名称
+     * @param shardingTotalCount 分片总数
+     * @return
+     */
     @Override
     public Map<JobInstance, List<Integer>> sharding(final List<JobInstance> jobInstances, final String jobName, final int shardingTotalCount) {
+        // 先判断运行的实例
         if (jobInstances.isEmpty()) {
             return Collections.emptyMap();
         }
+        // 分配能整出的部分
         Map<JobInstance, List<Integer>> result = shardingAliquot(jobInstances, shardingTotalCount);
         addAliquant(jobInstances, shardingTotalCount, result);
         return result;
     }
-    
+
+    /**
+     *  分配能整除的部分
+     * @param shardingUnits
+     * @param shardingTotalCount
+     * @return
+     */
     private Map<JobInstance, List<Integer>> shardingAliquot(final List<JobInstance> shardingUnits, final int shardingTotalCount) {
         Map<JobInstance, List<Integer>> result = new LinkedHashMap<>(shardingTotalCount, 1);
         int itemCountPerSharding = shardingTotalCount / shardingUnits.size();
         int count = 0;
         for (JobInstance each : shardingUnits) {
             List<Integer> shardingItems = new ArrayList<>(itemCountPerSharding + 1);
+            // 顺序向下分配
             for (int i = count * itemCountPerSharding; i < (count + 1) * itemCountPerSharding; i++) {
                 shardingItems.add(i);
             }
@@ -65,7 +81,13 @@ public final class AverageAllocationJobShardingStrategy implements JobShardingSt
         }
         return result;
     }
-    
+
+    /**
+     *  分配不能整除的部分
+     * @param shardingUnits
+     * @param shardingTotalCount
+     * @param shardingResults
+     */
     private void addAliquant(final List<JobInstance> shardingUnits, final int shardingTotalCount, final Map<JobInstance, List<Integer>> shardingResults) {
         int aliquant = shardingTotalCount % shardingUnits.size();
         int count = 0;

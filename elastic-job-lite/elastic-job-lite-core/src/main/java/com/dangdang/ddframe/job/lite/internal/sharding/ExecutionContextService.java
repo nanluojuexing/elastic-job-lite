@@ -60,12 +60,17 @@ public final class ExecutionContextService {
      */
     public ShardingContexts getJobShardingContext(final List<Integer> shardingItems) {
         LiteJobConfiguration liteJobConfig = configService.load(false);
+        // 移除正在运行中的作业分片项
         removeRunningIfMonitorExecution(liteJobConfig.isMonitorExecution(), shardingItems);
+        //
         if (shardingItems.isEmpty()) {
             return new ShardingContexts(buildTaskId(liteJobConfig, shardingItems), liteJobConfig.getJobName(), liteJobConfig.getTypeConfig().getCoreConfig().getShardingTotalCount(), 
                     liteJobConfig.getTypeConfig().getCoreConfig().getJobParameter(), Collections.<Integer, String>emptyMap());
         }
+        // 解析分片参数
         Map<Integer, String> shardingItemParameterMap = new ShardingItemParameters(liteJobConfig.getTypeConfig().getCoreConfig().getShardingItemParameters()).getMap();
+        // 创建分片上下文集合
+        // buildTaskId 创建作业任务id  getAssignedShardingItemParameterMap(...) 方法，获得当前作业节点的分片参数
         return new ShardingContexts(buildTaskId(liteJobConfig, shardingItems), liteJobConfig.getJobName(), liteJobConfig.getTypeConfig().getCoreConfig().getShardingTotalCount(), 
                 liteJobConfig.getTypeConfig().getCoreConfig().getJobParameter(), getAssignedShardingItemParameterMap(shardingItems, shardingItemParameterMap));
     }
@@ -83,6 +88,7 @@ public final class ExecutionContextService {
         List<Integer> runningShardingItems = new ArrayList<>(shardingItems.size());
         for (int each : shardingItems) {
             if (isRunning(each)) {
+                // /${JOB_NAME}/sharding/${ITEM_ID}/running
                 runningShardingItems.add(each);
             }
         }

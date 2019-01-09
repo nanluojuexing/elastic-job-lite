@@ -70,16 +70,21 @@ public final class FailoverListenerManager extends AbstractListenerManager {
         LiteJobConfiguration jobConfig = configService.load(true);
         return null != jobConfig && jobConfig.isFailover();
     }
-    
+
+    /**
+     * 监控失效的节点
+     */
     class JobCrashedJobListener extends AbstractJobListener {
         
         @Override
         protected void dataChanged(final String path, final Type eventType, final String data) {
+            // /${JOB_NAME}/instances/${INSTANCE_ID}
             if (isFailoverEnabled() && Type.NODE_REMOVED == eventType && instanceNode.isInstancePath(path)) {
                 String jobInstanceId = path.substring(instanceNode.getInstanceFullPath().length() + 1);
                 if (jobInstanceId.equals(JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId())) {
                     return;
                 }
+                // /${JOB_NAME}/sharding/${ITEM_ID}/failover 获得关闭作业节点
                 List<Integer> failoverItems = failoverService.getFailoverItems(jobInstanceId);
                 if (!failoverItems.isEmpty()) {
                     for (int each : failoverItems) {
@@ -87,6 +92,7 @@ public final class FailoverListenerManager extends AbstractListenerManager {
                         failoverService.failoverIfNecessary();
                     }
                 } else {
+                    // /${JOB_NAME}/sharding/${ITEM_ID}/instance  获得关闭作业节点
                     for (int each : shardingService.getShardingItems(jobInstanceId)) {
                         failoverService.setCrashedFailoverFlag(each);
                         failoverService.failoverIfNecessary();
