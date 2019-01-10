@@ -76,7 +76,12 @@ public final class MonitorService {
             log.error("Elastic job: Monitor service listen failure, error is: ", ex);
         }
     }
-    
+
+    /**
+     *  一个作业对应一个作业监控端口
+     * @param port
+     * @throws IOException
+     */
     private void openSocketForMonitor(final int port) throws IOException {
         serverSocket = new ServerSocket(port);
         new Thread() {
@@ -119,6 +124,7 @@ public final class MonitorService {
             ChildData treeCacheData = treeCache.getCurrentData(zkPath);
             String treeCachePath =  null == treeCacheData ? "" : treeCacheData.getPath();
             String treeCacheValue = null == treeCacheData ? "" : new String(treeCacheData.getData());
+            // 判断 TreeCache缓存 和 注册中心 数据一致
             if (zkValue.equals(treeCacheValue) && zkPath.equals(treeCachePath)) {
                 result.add(Joiner.on(" | ").join(zkPath, zkValue));
             } else {

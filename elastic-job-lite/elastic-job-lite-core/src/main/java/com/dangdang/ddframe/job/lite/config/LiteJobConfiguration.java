@@ -56,7 +56,7 @@ public final class LiteJobConfiguration implements JobRootConfiguration {
      */
     private final String jobShardingStrategyClass;
     /**
-     *
+     * 修复作业服务器不一致状态服务调度间隔时间属性
      */
     private final int reconcileIntervalMinutes;
     /**
